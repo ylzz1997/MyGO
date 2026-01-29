@@ -15,6 +15,7 @@ import (
 	"crypto/internal/hpke"
 	"crypto/rsa"
 	"crypto/tls/internal/fips140tls"
+	"crypto/x509"
 	"errors"
 	"fmt"
 	"hash"
@@ -415,8 +416,13 @@ pskIdentityLoop:
 				}
 			}
 		}
+		opts := x509.VerifyOptions{
+			CurrentTime: c.config.time(),
+			Roots:       c.config.ClientCAs,
+			KeyUsages:   []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth},
+		}
 		if sessionHasClientCerts && c.config.ClientAuth >= VerifyClientCertIfGiven &&
-			len(sessionState.verifiedChains) == 0 {
+			!anyValidVerifiedChain(sessionState.verifiedChains, opts) {
 			continue
 		}
 
